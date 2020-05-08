@@ -1,0 +1,67 @@
+﻿@{
+    ViewBag.Title = "Graph";
+}
+
+<h2>Graph</h2>
+
+
+<script>
+    function GetDOT() {
+        var dotcode = document.getElementById('dotcode').value;
+        var dotcodeforparse = document.getElementById('dotcodeforparse').value = dotcode;
+        var dotcodeforgraph = document.getElementById('dotcodeforgraph').value = dotcode;
+        
+        console.log(dotcodeforgraph);
+    }
+</script>
+
+
+<table>
+    <tr>
+        <td>
+            <div id="dot" style="margin: 10px" >
+                <p>@Html.TextArea("dotcode", "", 20, 40, new {@placeholder = @"/* пример dot-кода*/
+/*направленный граф*/
+digraph G {
+/*вершины статусы*/
+/*В названии вершин вместо пробелов используй знак нижнего подчеркивания
+через атрибут лейбл у вершины можно задать метку с пробелом
+она и будет использоваться в качестве имени статуса*/
+Status_OPTIONAL[label = ""Status OPTIONAL"",color = ""skyblue"", style=""filled""];
+StatusMANDATORY[label = ""Status MANDATORY"",color = ""grey"", style = ""filled""];
+StatusSTOPSTATUS[label = ""Status STOP-STATUS"",color = ""red"", style = ""filled""];
+StatusNEW[label = ""Status NEW"",color = ""grey"", style=""filled""];			
+
+/*связи между статусами*/
+Status_OPTIONAL-> StatusMANDATORY;
+Status_OPTIONAL-> StatusSTOPSTATUS;
+StatusMANDATORY ->StatusNEW;
+}" })</p>
+            </div>
+        </td>
+        <td>
+            <div id="parsedot" style="margin: 10px">
+            @using (Ajax.BeginForm("ParseGraph", new AjaxOptions {UpdateTargetId = "resultsParse"}))
+            {
+                <textarea id="dotcodeforparse" name="dotcodeforparse" hidden></textarea>
+                <input type="submit" value="Распарсить dotcode" onclick="GetDOT()"/>
+            }
+
+            <div id="resultsParse"></div>
+
+            </div>
+
+        </td>
+        <td>
+            <div id="showgraph" style="margin: 10px">
+                @using (Ajax.BeginForm("ShowGraph", new AjaxOptions { UpdateTargetId = "results" }))
+                {
+                    <textarea id="dotcodeforgraph" name="dotcodeforgraph" hidden></textarea>
+                    <input type="submit" value="Визуализировать граф" onclick="GetDOT()" />
+                }
+
+                <div id="results"></div>
+            </div>
+        </td>
+    </tr>
+</table>

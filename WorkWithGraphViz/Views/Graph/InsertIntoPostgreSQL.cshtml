@@ -1,0 +1,13 @@
+﻿
+@{
+    ViewBag.Title = "InsertIntoPostgreSQL";
+}
+
+
+<h1>Удачно записали в БД</h1>
+<p>ID новой статусной модели = @ViewBag.IdObject</p>
+<p>Кол-во загруженныйх статусов: @ViewBag.CountLoadStatuses</p>
+<p>Кол-во загруженных связей статусов: @ViewBag.CountLoadWorkflows</p>
+
+
+<p>@Html.ActionLink("Назад", "Index", "Graph")</p>

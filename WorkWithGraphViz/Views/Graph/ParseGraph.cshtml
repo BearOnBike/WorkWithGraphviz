@@ -1,0 +1,30 @@
+﻿@using WorkWithGraphViz.Models
+
+
+<p></p>
+@using (Html.BeginForm("InsertIntoPostgreSQL", "Graph", FormMethod.Post))
+{
+    <p>@Html.Label("Имя новой статусной модели:")</p>
+    <p>@Html.TextBox("nameNewStatusModel", "")</p>
+   
+    <p><input type="submit" value="Загрузить граф в БД" /></p>
+}
+    
+    
+
+    <p>Успешно распарсшен граф:</p>
+
+    <details>
+        <summary>Кол-во статусов: @Model.Statuses.Count кол-во связей: @Model.Workflows.Count</summary>
+        <p><b>Статусы:</b></p>
+        @foreach (var s in Model.Statuses)
+        {
+            <p>@s.IdFromDotVertex</p>
+        }
+
+        <p><b>Связи статусов:</b></p>
+        @foreach (var w in Model.Workflows)
+        {
+            <p>Из @w.PrevStatus.IdFromDotVertex В @w.NextStatus.IdFromDotVertex</p>
+        }
+    </details>
