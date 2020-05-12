@@ -27,7 +27,8 @@ using WorkWithGraphViz.Models;
 
 //абстракция на графы и взаимодействие с Graphviz
 //для визуализации из web морды, установи пакет graphviz 2.38 через установщик .msi и на папку bin ссылку укажи в классе ClsForInteractionWithGraphviz 
-
+//есть проблема, при установки пакета graphviz 2.38 что то не так в проекте с подключением внутренних библиотек .pango отвечающие за шрифты.
+//костыль скачать пакет graphviz 2.28 установить его, но НЕ использовать, перезагрузить ПК и проблема исчезает... 
 
 namespace WorkWithGraphViz.Controllers
 {
@@ -185,8 +186,7 @@ namespace WorkWithGraphViz.Controllers
                             return PartialView("ParseNotSuccess");
                         }
 
-                        //TODO тут надо циклы проверить поиск в глубину
-                        string isThereСycle = DFS(graph);
+                        string isThereСycle = CycleSearch(graph);
                         if (!String.IsNullOrEmpty(isThereСycle))
                         {
                             ViewBag.Error = isThereСycle;
@@ -331,17 +331,18 @@ namespace WorkWithGraphViz.Controllers
 
         }
 
-        /// <summary>
-        /// Поиск в глубину цикла в графе
-        /// </summary>
-        public string DFS(DotGraph<string> graph)
-        {
-            int countVert = graph.AllVertices.Count();
-            List<DotVertex<string>> adv = graph.AllVertices.ToList();
-            List<Int32>[] adj = new List<int>[countVert]; //массив смежности для каждой вершины
-            bool[] visited = new bool[countVert]; //посещенные узлы
+        #region Поиск цикла графе
         
-            //заполним массив смежности у каждой вершины
+        /// <summary>
+        /// Поиск цикла в ориентированном графе
+        /// </summary>
+        public string CycleSearch (DotGraph<string> graph)
+        {
+            int countVert = graph.AllVertices.Count(); //кол-во вершин
+            List<DotVertex<string>> adv = graph.AllVertices.ToList();//все вершины в листе
+            List<Int32>[] adj = new List<int>[countVert]; //массив списков смежности(в какие вершины можно попасть из данной), для каждой вершины свой список.
+           
+            //заполним список смежности у каждой вершины
             foreach (var ve in graph.VerticesEdges)
             {
               /* Example : vertices=4
@@ -361,6 +362,126 @@ namespace WorkWithGraphViz.Controllers
                     }
                 }
             }
+            
+            #region для ориентированного графа
+            //в орграфе дуги могут быть параллельно приходить в одну вершину и это не цикл.
+            //используем топологическую сортировку
+            /*
+            Алгоритм состоит в следующем:
+                        Изначально все вершины белые.
+            Для каждой вершины делаем шаг алгоритма.
+           
+            Шаг алгоритма:
+            Если вершина чёрная, ничего делать не надо.
+            Если вершина серая — найден цикл, топологическая сортировка невозможна.
+            Если вершина белая
+                Красим её в серый
+                Применяем шаг алгоритма для всех вершин, в которые можно попасть из текущей
+                Красим вершину в чёрный и помещаем её в начало окончательного списка.
+             */
+
+            #endregion
+
+            //цвета не как не связаны с типом статуса, это отдельное перечесление для поиска цикла.
+            Color[] visitedEnum = new Color[countVert]; //посещённые узлы столько же сколько вершин в графе
+            for (int i = 0; i < countVert; i++)
+            {
+                visitedEnum[i] = Color.White; //изначально все вершины белые
+            }
+            
+            string res =String.Empty;
+            for (int i = 0; i < countVert; i++)//перебираем все вершины
+            {
+                if (visitedEnum[i] == Color.White)
+                {
+                    visitedEnum[i] = Color.Grey; //красим в серый
+                    res = TopologicalSorting(i, ref adj, ref visitedEnum, ref adv); //проверяем все вершины в списке смежности
+                    if (!string.IsNullOrEmpty(res))
+                    {
+                        return res;
+                    }
+                    visitedEnum[i] = Color.Black; //красим в черный
+                }
+            }
+            //сюда зашли значит не нашли цикла
+            return "";
+        }
+
+        /// <summary>
+        /// Топологическая сортировка. Поиск цикла через перебор вершин из списка смежности текущей вершины.
+        /// </summary>
+        /// <param name="currentVertical"> Текущая вершина</param>
+        /// <param name="adj">Массив списков смежностей</param>
+        /// <param name="visitedEnum"> Массив цветов, которые говорят посещён ли узел или нет</param>
+        /// <param name="adv">Список всех вершин</param>
+        /// <returns>string</returns>
+        public string TopologicalSorting(int currentVertical, ref List<int>[] adj,  ref Color[] visitedEnum, ref List<DotVertex<string>> adv)
+        {
+            foreach (int i in adj[currentVertical]) //перебираем все вершины из списка смежности текущей вершины и проверяем какого они цвета.
+            {
+                if (visitedEnum[i] == Color.White)
+                {
+                    visitedEnum[i] = Color.Grey;
+                    string res = TopologicalSorting(i, ref adj, ref visitedEnum, ref adv);//опа рекурсия
+                    if (!string.IsNullOrEmpty(res))
+                    {
+                        return res;
+                    }
+                    visitedEnum[i] = Color.Black;
+                }
+                else if (visitedEnum[i] == Color.Grey)
+                {
+                    return $"Нашли цикл: в вершине {adv[i].Id}";
+                }
+                else
+                {
+                    //Color.Black - ничего делать не надо 
+                }
+            }
+
+            return "";
+        }
+
+        /// <summary>
+        /// Признак для определения посещенных вершин
+        /// </summary>
+        public enum Color
+        {
+            White = 1,
+            Black = 2,
+            Grey = 3
+        }
+
+        /// <summary>
+        /// Поиск в глубину цикла в неориентированном графе, работает, но не используется.
+        /// </summary>
+        public string DFS(DotGraph<string> graph)
+        {
+            int countVert = graph.AllVertices.Count();
+            List<DotVertex<string>> adv = graph.AllVertices.ToList();
+            List<Int32>[] adj = new List<int>[countVert]; //массив списков смежности(в какие вершины можно попасть из данной), для каждой вершины свой список.
+            bool[] visited = new bool[countVert]; //посещенные узлы
+
+            //заполним списки смежности у каждой вершины
+            foreach (var ve in graph.VerticesEdges)
+            {
+                /* Example : vertices=4
+                 * Source->[Destination, Destination]
+                 *      0->[1,2]
+                 *      1->[2]
+                 *      2->[0,3]
+                 *      3->[]
+                 */
+
+                for (int i = 0; i < adv.Count; i++)
+                {
+                    if (adj[i] == null) adj[i] = new List<int>();
+                    if (adv[i].Id == ve.Source.Id)
+                    {
+                        adj[i].Add(adv.IndexOf(ve.Destination));
+                    }
+                }
+            }
 
 
             int startDFSFromVertNumber = 0; //старт обхода с узла №
@@ -371,7 +492,7 @@ namespace WorkWithGraphViz.Controllers
             while (stack.Count != 0)
             {
                 startDFSFromVertNumber = stack.Pop();//удалили и вернули удалённый элемент
-                
+
                 foreach (int i in adj[startDFSFromVertNumber])
                 {
                     if (!visited[i])
@@ -393,9 +514,13 @@ namespace WorkWithGraphViz.Controllers
                 }
             }
 
-            return "";
             //сюда зашли значит не нашли цикла
+            return "";
+           
         }
+
+        #endregion
+
 
         /// <summary>
         /// Визуализация графа через GraphViz программно.
@@ -590,7 +715,10 @@ namespace WorkWithGraphViz.Controllers
 
         }
 
-
+        /// <summary>
+        /// Стартовая страница
+        /// </summary>
+        /// <returns></returns>
         public ActionResult Index()
         {
 
