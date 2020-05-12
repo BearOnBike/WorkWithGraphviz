@@ -1,4 +1,3 @@
-WorkWithGraphviz
 Example of working with graphs in C# ASP MVC.
 The project can:
 Work with DOT code.
