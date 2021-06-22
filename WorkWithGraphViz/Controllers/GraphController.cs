@@ -620,39 +620,42 @@ namespace WorkWithGraphViz.Controllers
                     ViewBag.Error = "Не удалось загрузить StatusModel";
                     return PartialView("ParseNotSuccess");
                 }
-
-                String connectionString = "Server=localhost;Port=5432;User Id=postgres;Password=1234;Database=Graphs;";
+                String connectionString = "Server=localhost;Port=5432;User Id=postgres;Password=1234;Database=postgres;";
 
                 using (NpgsqlConnection npgSqlConnection = new NpgsqlConnection(connectionString))
                 {
                     npgSqlConnection.Open();
 
                     //статусную модель добавляем 
-                    NpgsqlCommand objectsSqlCommand = new NpgsqlCommand("INSERT INTO objects (object_name) VALUES (@name) RETURNING object_id", npgSqlConnection);
+                    NpgsqlCommand objectsSqlCommand = new NpgsqlCommand("INSERT INTO statusek.objects (object_name, created_at, updated_at) VALUES (@name, @created_at, @updated_at) RETURNING id", npgSqlConnection);
                     objectsSqlCommand.Parameters.AddWithValue("name", Sm.Name);
+                    objectsSqlCommand.Parameters.AddWithValue("created_at", DateTime.Now);
+                    objectsSqlCommand.Parameters.AddWithValue("updated_at", DateTime.Now);
+
                     // objectsSqlCommand.ExecuteNonQuery();
-                    Sm.IdFromDB = (int)objectsSqlCommand.ExecuteScalar();
+                    Sm.IdFromDB = (long)objectsSqlCommand.ExecuteScalar();
 
                     ViewBag.IdObject = Sm.IdFromDB;
 
-
                     //статусы создаем
                     NpgsqlCommand statusesSqlCommand =
-                        new NpgsqlCommand("INSERT INTO statuses (object_id, status_desc, status_name, status_type) VALUES ", npgSqlConnection);
+                        new NpgsqlCommand("INSERT INTO statusek.statuses (object_id, status_desc, status_name, status_type, created_at, updated_at) VALUES ", npgSqlConnection);
 
                     for (int i =0; Sm.Statuses.Count > i; i++)
                     {
                         
-                        statusesSqlCommand.CommandText += $"(@objectid{i}, @desc{i}, @name{i}, @type{i}), ";
+                        statusesSqlCommand.CommandText += $"(@objectid{i}, @desc{i}, @name{i}, @type{i}, @created_at{i}, @updated_at{i}), ";
 
                         statusesSqlCommand.Parameters.AddWithValue($"objectid{i}", Sm.IdFromDB);
                         statusesSqlCommand.Parameters.AddWithValue($"desc{i}", Sm.Statuses[i].Describe);
                         statusesSqlCommand.Parameters.AddWithValue($"name{i}", Sm.Statuses[i].Name);
                         statusesSqlCommand.Parameters.AddWithValue($"type{i}", Sm.Statuses[i].Type);
-                        
+                        statusesSqlCommand.Parameters.AddWithValue($"created_at{i}", DateTime.Now);
+                        statusesSqlCommand.Parameters.AddWithValue($"updated_at{i}", DateTime.Now);
+
                     }
                     statusesSqlCommand.CommandText = statusesSqlCommand.CommandText.Remove(statusesSqlCommand.CommandText.Length - 2);
-                    statusesSqlCommand.CommandText += " RETURNING status_id";
+                    statusesSqlCommand.CommandText += " RETURNING id";
 
                     //int statusesid = (int)statusesSqlCommand.ExecuteScalar();
                     NpgsqlDataReader Reader = statusesSqlCommand.ExecuteReader();
@@ -662,7 +665,7 @@ namespace WorkWithGraphViz.Controllers
                     {
                         while (Reader.Read())
                         {
-                            Sm.Statuses[countLoadStatuses].IdFromDB= Reader.GetInt32(0);
+                            Sm.Statuses[countLoadStatuses].IdFromDB= Reader.GetInt64(0);
                             countLoadStatuses++;
                         }
                     }
@@ -673,17 +676,19 @@ namespace WorkWithGraphViz.Controllers
 
                     //связи создаем
                     NpgsqlCommand workflowsSqlCommand =
-                        new NpgsqlCommand("INSERT INTO workflows (status_id_prev, status_id_next) VALUES ", npgSqlConnection);
+                        new NpgsqlCommand("INSERT INTO statusek.workflows (status_prev_id, status_next_id, created_at, updated_at) VALUES ", npgSqlConnection);
 
                     for (int i =0; Sm.Workflows.Count>i;i++)
                     {
-                        workflowsSqlCommand.CommandText += $"(@idprev{i}, @idnext{i}), ";
+                        workflowsSqlCommand.CommandText += $"(@idprev{i}, @idnext{i}, @created_at{i}, @updated_at{i}), ";
 
                         workflowsSqlCommand.Parameters.AddWithValue($"idprev{i}", Sm.Workflows[i].PrevStatus.IdFromDB);
                         workflowsSqlCommand.Parameters.AddWithValue($"idnext{i}", Sm.Workflows[i].NextStatus.IdFromDB);
+                        workflowsSqlCommand.Parameters.AddWithValue($"created_at{i}", DateTime.Now);
+                        workflowsSqlCommand.Parameters.AddWithValue($"updated_at{i}", DateTime.Now);
                     }
                     workflowsSqlCommand.CommandText = workflowsSqlCommand.CommandText.Remove(workflowsSqlCommand.CommandText.Length - 2);
-                    workflowsSqlCommand.CommandText +=" RETURNING workflow_id";
+                    workflowsSqlCommand.CommandText +=" RETURNING id";
                     //workflowsSqlCommand.ExecuteNonQuery();
 
                     Reader = workflowsSqlCommand.ExecuteReader();
@@ -693,7 +698,7 @@ namespace WorkWithGraphViz.Controllers
                     {
                         while (Reader.Read())
                         {
-                            Sm.Workflows[countLoadWorkflows].IdFromDB = Reader.GetInt32(0);
+                            Sm.Workflows[countLoadWorkflows].IdFromDB = Reader.GetInt64(0);
                             countLoadWorkflows++;
                         }
                     }

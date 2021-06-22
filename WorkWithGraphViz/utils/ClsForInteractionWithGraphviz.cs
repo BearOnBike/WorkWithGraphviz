@@ -9,8 +9,8 @@ namespace WorkWithGraphViz.utils
     public static class ClsForInteractionWithGraphviz
     {
         //the entire bin folder of graphviz project is needed
-        private const string LIB_GVC = @"E:\Программировать сюда\исходники\VS_C#\Testing\Testing\bin\external\GraphViz\bin\gvc.dll";
-        private const string LIB_GRAPH = @"E:\Программировать сюда\исходники\VS_C#\Testing\Testing\bin\external\GraphViz\bin\cgraph.dll";
+        private const string LIB_GVC = @"C:\Program Files (x86)\Graphviz2.38\bin\gvc.dll";
+        private const string LIB_GRAPH = @"C:\Program Files (x86)\Graphviz2.38\bin\cgraph.dll";
         private const int SUCCESS = 0;
 
         [DllImport(LIB_GVC)]
@@ -99,7 +99,7 @@ namespace WorkWithGraphViz.utils
         {
             //the entire bin folder of graphviz project is needed
             string executable = @".\external\bin\dot.exe";
-            string output = @"E:\tempgraph"; 
+            string output = @"D:\tempgraph"; 
             File.WriteAllText(output, dot);
 
             System.Diagnostics.Process process = new System.Diagnostics.Process();
