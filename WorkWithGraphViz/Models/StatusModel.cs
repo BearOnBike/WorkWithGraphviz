@@ -10,7 +10,7 @@ namespace WorkWithGraphViz.Models
     /// </summary>
     public class StatusModel
     {
-        public int IdFromDB { get; set; }
+        public long IdFromDB { get; set; }
 
         public string Name { get; set; }
 
@@ -32,7 +32,7 @@ namespace WorkWithGraphViz.Models
     /// </summary>
     public class Status
     {
-        public int IdFromDB { get; set; }
+        public long IdFromDB { get; set; }
 
         public string IdFromDotVertex { get; set; }
         public string Name { get; set; }
@@ -47,7 +47,7 @@ namespace WorkWithGraphViz.Models
     /// </summary>
     public class Workflow
     {
-        public int IdFromDB { get; set; }
+        public long IdFromDB { get; set; }
         public Status NextStatus { get; set; }
 
         public Status PrevStatus { get; set; }
